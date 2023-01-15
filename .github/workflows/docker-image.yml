@@ -28,6 +28,9 @@ jobs:
     env:
       REPO: ${{ secrets.DOCKER_REPO }}
     steps:
+      - name: Get version
+        id: vars
+        run: echo ::set-output name=version::$(cat .version)
       - name: Checkout
         uses: actions/checkout@v2
       - name: Set up JDK 8
@@ -40,11 +43,11 @@ jobs:
         uses: datamonsters/replace-action@v2
         with:
           files: 'pom.xml'
-          replacements: 'Snapshot=${cat .version}'
+          replacements: 'Snapshot=${{ steps.vars.outputs.version }}'
       - name: Build with Maven
         run: mvn --batch-mode --update-snapshots verify
       - name: Rename jar
-        run: mv target/*-All.jar JMusicBot-${cat .version}.jar
+        run: mv target/*-All.jar JMusicBot-${{ steps.vars.outputs.version }}.jar
         
       - uses: actions/checkout@v1
       - name: Login to Docker Hub
