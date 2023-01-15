@@ -1,19 +1,12 @@
-#
-# Build Stage
-#
-FROM maven:3.3-jdk-8
-RUN mkdir /build
-COPY . /build
-WORKDIR /build
-RUN mvn clean package
+# Dockerfile
 
-#
-# Package Stage
-#
 FROM adoptopenjdk/openjdk8:alpine
+
+RUN export VERS=$(cat .version)
+
 RUN mkdir /opt/jmusicbot
-RUN mkdir /app
-COPY --from=0 /build/target/JMusicBot-Snapshot-All.jar /opt/jmusicbot/jmusicbot.jar
-WORKDIR /app
+RUN mkdir /config
+COPY JMusicBot-${VERS}.jar /opt/jmusicbot/jmusicbot.jar
+WORKDIR /config
 CMD ["java", "-Dnogui=true", "-jar", "/opt/jmusicbot/jmusicbot.jar"]
 
