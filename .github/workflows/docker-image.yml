@@ -1,10 +1,12 @@
 name: Docker Image CI
 
 on:
-  push:
-    branches: [ "master" ]
-  pull_request:
-    branches: [ "master" ]
+  workflow_dispatch:
+    inputs:
+      version_number:
+        description: 'Version Number'     
+        required: true
+        type: string
 
 jobs:
   test:
@@ -28,9 +30,6 @@ jobs:
     env:
       REPO: ${{ secrets.DOCKER_REPO }}
     steps:
-      - name: Get version
-        id: vars
-        run: echo ::set-output name=version::$(cat .version)
       - name: Checkout
         uses: actions/checkout@v2
       - name: Set up JDK 8
@@ -43,16 +42,16 @@ jobs:
         uses: datamonsters/replace-action@v2
         with:
           files: 'pom.xml'
-          replacements: 'Snapshot=${{ steps.vars.outputs.version }}'
+          replacements: 'Snapshot=${{ github.event.inputs.version_number }}'
       - name: Build with Maven
         run: mvn --batch-mode --update-snapshots verify
       - name: Rename jar
-        run: mv target/*-All.jar JMusicBot-${{ steps.vars.outputs.version }}.jar
+        run: mv target/*-All.jar JMusicBot-${{ github.event.inputs.version_number }}.jar
         
       - uses: actions/checkout@v1
       - name: Login to Docker Hub
         run: docker login -u ${{ secrets.DOCKERHUB_USERNAME }} -p ${{ secrets.DOCKERHUB_TOKEN }}
       - name: Build Docker image
-        run: docker build -t $REPO:latest -t $REPO:${GITHUB_SHA::8} -t .
+        run: docker build --build-arg version=${{ github.event.inputs.version_number }} -t $REPO:latest -t $REPO:${GITHUB_SHA::8} -t .
       - name: Publish Docker image
         run: docker push $REPO
